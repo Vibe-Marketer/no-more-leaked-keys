@@ -48,92 +48,111 @@ if (os.platform() !== 'darwin') {
 const HOME = os.homedir();
 const PACKAGE_DIR = path.join(__dirname, '..');
 
-// Directories
+// Claude Code directories
 const CLAUDE_DIR = path.join(HOME, '.claude');
-const SKILLS_DIR = path.join(CLAUDE_DIR, 'skills');
-const COMMANDS_DIR = path.join(CLAUDE_DIR, 'commands');
-const HOOKS_DIR = path.join(CLAUDE_DIR, 'hooks');
-const SETTINGS_FILE = path.join(CLAUDE_DIR, 'settings.json');
+const CLAUDE_SKILLS_DIR = path.join(CLAUDE_DIR, 'skills');
+const CLAUDE_COMMANDS_DIR = path.join(CLAUDE_DIR, 'commands');
+const CLAUDE_HOOKS_DIR = path.join(CLAUDE_DIR, 'hooks');
+const CLAUDE_SETTINGS_FILE = path.join(CLAUDE_DIR, 'settings.json');
+
+// OpenCode directories
+const OPENCODE_DIR = path.join(HOME, '.config', 'opencode');
+const OPENCODE_SKILLS_DIR = path.join(OPENCODE_DIR, 'skills');
+const OPENCODE_COMMANDS_DIR = path.join(OPENCODE_DIR, 'commands');
+const OPENCODE_HOOKS_DIR = path.join(OPENCODE_DIR, 'hooks');
+const OPENCODE_SETTINGS_FILE = path.join(OPENCODE_DIR, 'settings.json');
 
 log('\n======================================', 'bright');
 log('  No More Leaked Keys - Installer', 'bright');
 log('======================================\n', 'bright');
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 
-// Step 1: Create directories
+// Step 1: Create directories for both Claude Code and OpenCode
 logStep(1, TOTAL_STEPS, 'Creating directories...');
-[SKILLS_DIR, COMMANDS_DIR, HOOKS_DIR].forEach(dir => {
+[
+  CLAUDE_SKILLS_DIR, CLAUDE_COMMANDS_DIR, CLAUDE_HOOKS_DIR,
+  OPENCODE_SKILLS_DIR, OPENCODE_COMMANDS_DIR, OPENCODE_HOOKS_DIR
+].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 });
-logSuccess('Directories ready');
+logSuccess('Directories ready (Claude Code + OpenCode)');
 
-// Step 2: Install skill
+// Step 2: Install skill to both
 logStep(2, TOTAL_STEPS, 'Installing keychain-secrets skill...');
 const skillSrc = path.join(PACKAGE_DIR, 'keychain-secrets');
-const skillDest = path.join(SKILLS_DIR, 'keychain-secrets');
-fs.cpSync(skillSrc, skillDest, { recursive: true });
-logSuccess('Skill installed');
+fs.cpSync(skillSrc, path.join(CLAUDE_SKILLS_DIR, 'keychain-secrets'), { recursive: true });
+fs.cpSync(skillSrc, path.join(OPENCODE_SKILLS_DIR, 'keychain-secrets'), { recursive: true });
+logSuccess('Skill installed to Claude Code and OpenCode');
 
-// Step 3: Install commands
+// Step 3: Install commands to both
 logStep(3, TOTAL_STEPS, 'Installing slash commands...');
 const commandsSrc = path.join(PACKAGE_DIR, 'commands');
 fs.readdirSync(commandsSrc).forEach(file => {
   if (file.endsWith('.md')) {
-    fs.copyFileSync(
-      path.join(commandsSrc, file),
-      path.join(COMMANDS_DIR, file)
-    );
+    fs.copyFileSync(path.join(commandsSrc, file), path.join(CLAUDE_COMMANDS_DIR, file));
+    fs.copyFileSync(path.join(commandsSrc, file), path.join(OPENCODE_COMMANDS_DIR, file));
   }
 });
 logSuccess('Commands installed: /secrets, /add-mcp');
 
-// Step 4: Install hook
+// Step 4: Install hook to both
 logStep(4, TOTAL_STEPS, 'Installing security hook...');
 const hookSrc = path.join(PACKAGE_DIR, 'hooks', 'block-unsafe-mcp-add.sh');
-const hookDest = path.join(HOOKS_DIR, 'block-unsafe-mcp-add.sh');
-fs.copyFileSync(hookSrc, hookDest);
-fs.chmodSync(hookDest, '755');
-logSuccess('Security hook installed');
+const claudeHookDest = path.join(CLAUDE_HOOKS_DIR, 'block-unsafe-mcp-add.sh');
+const opencodeHookDest = path.join(OPENCODE_HOOKS_DIR, 'block-unsafe-mcp-add.sh');
+fs.copyFileSync(hookSrc, claudeHookDest);
+fs.copyFileSync(hookSrc, opencodeHookDest);
+fs.chmodSync(claudeHookDest, '755');
+fs.chmodSync(opencodeHookDest, '755');
+logSuccess('Security hook installed to both');
 
 // Step 5: Configure Claude Code settings
 logStep(5, TOTAL_STEPS, 'Configuring Claude Code...');
 
-let settings = {};
-if (fs.existsSync(SETTINGS_FILE)) {
-  try {
-    settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
-  } catch (e) {
-    logWarning('Could not parse existing settings.json, creating new one');
+function configureHook(settingsFile, hookPath) {
+  let settings = {};
+  if (fs.existsSync(settingsFile)) {
+    try {
+      settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
+    } catch (e) {
+      // Will create new
+    }
   }
+
+  if (!settings.hooks) settings.hooks = {};
+  if (!settings.hooks.PreToolUse) settings.hooks.PreToolUse = [];
+
+  const hookExists = settings.hooks.PreToolUse.some(
+    hook => JSON.stringify(hook).includes('block-unsafe-mcp-add.sh')
+  );
+
+  if (!hookExists) {
+    settings.hooks.PreToolUse.push({
+      matcher: 'Bash',
+      hooks: [{
+        type: 'command',
+        command: `bash ${hookPath}`
+      }]
+    });
+    fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2));
+    return 'configured';
+  }
+  return 'already configured';
 }
 
-if (!settings.hooks) settings.hooks = {};
-if (!settings.hooks.PreToolUse) settings.hooks.PreToolUse = [];
+const claudeResult = configureHook(CLAUDE_SETTINGS_FILE, '~/.claude/hooks/block-unsafe-mcp-add.sh');
+logSuccess(`Claude Code hook ${claudeResult}`);
 
-// Check if hook already exists
-const hookExists = settings.hooks.PreToolUse.some(
-  hook => JSON.stringify(hook).includes('block-unsafe-mcp-add.sh')
-);
+// Step 6: Configure OpenCode settings
+logStep(6, TOTAL_STEPS, 'Configuring OpenCode...');
+const opencodeResult = configureHook(OPENCODE_SETTINGS_FILE, '~/.config/opencode/hooks/block-unsafe-mcp-add.sh');
+logSuccess(`OpenCode hook ${opencodeResult}`);
 
-if (!hookExists) {
-  settings.hooks.PreToolUse.push({
-    matcher: 'Bash',
-    hooks: [{
-      type: 'command',
-      command: 'bash ~/.claude/hooks/block-unsafe-mcp-add.sh'
-    }]
-  });
-  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
-  logSuccess('Claude Code hook configured');
-} else {
-  logSuccess('Claude Code hook already configured');
-}
-
-// Step 6: Add shell protection
-logStep(6, TOTAL_STEPS, 'Adding shell-level protection...');
+// Step 7: Add shell protection
+logStep(7, TOTAL_STEPS, 'Adding shell-level protection...');
 
 const shellProtection = `
 # ============================================
@@ -191,18 +210,20 @@ log('  Installation Complete!', 'green');
 log('======================================\n', 'green');
 
 log("What's installed:", 'bright');
-log('  • Skill: ~/.claude/skills/keychain-secrets/');
-log('  • Commands: /secrets, /add-mcp');
-log('  • Claude Code hook: Blocks unsafe commands from Claude');
-log('  • Shell protection: Blocks unsafe commands from terminal');
+log('  • Claude Code: ~/.claude/skills/, commands/, hooks/');
+log('  • OpenCode:    ~/.config/opencode/skills/, commands/, hooks/');
+log('  • Commands:    /secrets, /add-mcp');
+log('  • Shell:       Protection function in ~/.zshrc');
 
 log('\nUsage:', 'bright');
 log('  • Type /secrets to manage API keys');
 log('  • Type /add-mcp to securely add MCP servers');
+log('  • Works in BOTH Claude Code and OpenCode');
 
-log('\nProtection is now active at TWO levels:', 'bright');
-log('  1. Claude Code hook - blocks Claude from running unsafe commands');
-log('  2. Shell function - blocks YOU from running unsafe commands');
+log('\nProtection is active at THREE levels:', 'bright');
+log('  1. Claude Code hook - blocks unsafe commands');
+log('  2. OpenCode hook - blocks unsafe commands');
+log('  3. Shell function - blocks manual terminal commands');
 
 log('\nTo activate shell protection now, run:', 'yellow');
 log(`  source ${shellRc}\n`);
