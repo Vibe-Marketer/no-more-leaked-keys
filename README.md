@@ -179,14 +179,16 @@ claude mcp add --transport http tally https://api.tally.so/mcp \
 ### NPM Install (Recommended)
 
 ```bash
-npx no-more-leaked-keys
-```
-
-Or install globally:
-
-```bash
 npm install -g no-more-leaked-keys
 ```
+
+Then run:
+
+```bash
+no-more-leaked-keys
+```
+
+That's it. You're protected.
 
 ### Alternative: Git Clone
 
