@@ -88,15 +88,27 @@ const skillSrc = path.join(PACKAGE_DIR, 'keychain-secrets');
 const claudeSkillDest = path.join(CLAUDE_SKILLS_DIR, 'keychain-secrets');
 const opencodeSkillDest = path.join(OPENCODE_SKILLS_DIR, 'keychain-secrets');
 
-if (fs.existsSync(claudeSkillDest)) {
-  fs.rmSync(claudeSkillDest, { recursive: true, force: true });
-}
-if (fs.existsSync(opencodeSkillDest)) {
-  fs.rmSync(opencodeSkillDest, { recursive: true, force: true });
+function safeRemoveDir(dirPath) {
+  if (fs.existsSync(dirPath)) {
+    try {
+      // Try native rm first
+      fs.rmSync(dirPath, { recursive: true, force: true });
+    } catch (e) {
+      // Fall back to shell rm if Node.js rmSync fails
+      try {
+        execSync(`rm -rf "${dirPath}"`, { stdio: 'ignore' });
+      } catch (e2) {
+        logWarning(`Could not remove ${dirPath}, will overwrite`);
+      }
+    }
+  }
 }
 
-fs.cpSync(skillSrc, claudeSkillDest, { recursive: true });
-fs.cpSync(skillSrc, opencodeSkillDest, { recursive: true });
+safeRemoveDir(claudeSkillDest);
+safeRemoveDir(opencodeSkillDest);
+
+fs.cpSync(skillSrc, claudeSkillDest, { recursive: true, force: true });
+fs.cpSync(skillSrc, opencodeSkillDest, { recursive: true, force: true });
 logSuccess('Skill installed to Claude Code and OpenCode');
 
 // Step 3: Install commands to both
