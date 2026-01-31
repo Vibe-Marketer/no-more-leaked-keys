@@ -176,7 +176,19 @@ claude mcp add --transport http tally https://api.tally.so/mcp \
 
 ## Installation
 
-### One-Command Install (Recommended)
+### NPM Install (Recommended)
+
+```bash
+npx no-more-leaked-keys
+```
+
+Or install globally:
+
+```bash
+npm install -g no-more-leaked-keys
+```
+
+### Alternative: Git Clone
 
 ```bash
 git clone https://github.com/Vibe-Marketer/no-more-leaked-keys.git && cd no-more-leaked-keys && ./install.sh

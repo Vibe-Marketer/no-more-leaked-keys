@@ -1,0 +1,49 @@
+{
+  "name": "no-more-leaked-keys",
+  "version": "1.0.0",
+  "description": "Stop accidentally exposing API keys. Secure key management for Claude Code using macOS Keychain.",
+  "bin": {
+    "no-more-leaked-keys": "./bin/install.js"
+  },
+  "scripts": {
+    "postinstall": "node bin/install.js"
+  },
+  "keywords": [
+    "api-keys",
+    "security",
+    "secrets",
+    "keychain",
+    "macos",
+    "claude",
+    "claude-code",
+    "opencode",
+    "dotenv",
+    "env",
+    "environment-variables",
+    "mcp",
+    "credentials",
+    "secret-management"
+  ],
+  "author": "Andrew Naegele",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Vibe-Marketer/no-more-leaked-keys.git"
+  },
+  "homepage": "https://github.com/Vibe-Marketer/no-more-leaked-keys#readme",
+  "bugs": {
+    "url": "https://github.com/Vibe-Marketer/no-more-leaked-keys/issues"
+  },
+  "os": ["darwin"],
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "files": [
+    "bin/",
+    "keychain-secrets/",
+    "commands/",
+    "hooks/",
+    "LICENSE",
+    "README.md"
+  ]
+}
