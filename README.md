@@ -146,7 +146,7 @@ Every layer is protected:
 
 ```bash
 # Clone the repo
-git clone https://github.com/YOUR_USERNAME/no-more-leaked-keys.git
+git clone https://github.com/Vibe-Marketer/no-more-leaked-keys.git
 cd no-more-leaked-keys
 
 # Install the skill and command
