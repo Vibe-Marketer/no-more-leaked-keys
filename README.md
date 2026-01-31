@@ -143,9 +143,9 @@ Every layer is protected:
 
 ## Adding MCP Servers Securely
 
-**WARNING: Never use `claude mcp add` with authentication headers!**
+**WARNING: Anthropic's `claude mcp add` command exposes your API key!**
 
-The native `claude mcp add` command **exposes your API key** in terminal output:
+The native `claude mcp add` command has a security flaw - it **echoes your API key** to the terminal:
 
 ```bash
 # DANGEROUS - This prints your key to the terminal!
@@ -154,10 +154,11 @@ claude mcp add --transport http tally https://api.tally.so/mcp \
 # Output includes: "Authorization": "Bearer sk-actual-key-here"  <-- EXPOSED!
 ```
 
-**Use this skill instead.** It:
-1. Pulls the key from Keychain silently
-2. Writes directly to the config file
-3. Never echoes the key anywhere
+**This skill fixes that.** After installation:
+1. The unsafe command is **automatically blocked** by a security hook
+2. You use `/secrets` or `/add-mcp` instead
+3. Keys are pulled from Keychain silently and written directly to config
+4. Keys are **never echoed anywhere**
 
 ```
 > /secrets
@@ -175,20 +176,51 @@ claude mcp add --transport http tally https://api.tally.so/mcp \
 
 ## Installation
 
-### For Claude Code Users (Recommended)
+### One-Command Install (Recommended)
 
 ```bash
-# Clone the repo
+git clone https://github.com/Vibe-Marketer/no-more-leaked-keys.git && cd no-more-leaked-keys && ./install.sh
+```
+
+This installs:
+- The skill (`/secrets`)
+- The commands (`/add-mcp`)
+- **A security hook that blocks unsafe `claude mcp add` commands**
+
+Then restart Claude Code.
+
+### What the Security Hook Does
+
+After installation, if anyone (you or Claude) tries to run `claude mcp add` with authentication headers, it gets **automatically blocked**:
+
+```
+BLOCKED: claude mcp add with auth headers exposes your API key in terminal output!
+
+Use /secrets or /add-mcp instead - these pull keys from Keychain securely 
+without exposing them.
+```
+
+This protects you even if you forget and try to use the unsafe command.
+
+### Manual Installation
+
+If you prefer to install manually:
+
+```bash
 git clone https://github.com/Vibe-Marketer/no-more-leaked-keys.git
 cd no-more-leaked-keys
 
-# Install the skill and command
-mkdir -p ~/.claude/skills ~/.claude/commands
+# Install skill and commands
+mkdir -p ~/.claude/skills ~/.claude/commands ~/.claude/hooks
 cp -r keychain-secrets ~/.claude/skills/
-cp commands/secrets.md ~/.claude/commands/
+cp commands/*.md ~/.claude/commands/
+cp hooks/*.sh ~/.claude/hooks/
+chmod +x ~/.claude/hooks/*.sh
+
+# Then manually add the hook to ~/.claude/settings.json (see install.sh for details)
 ```
 
-**Then use it:**
+**Usage:**
 - Type `/secrets` in Claude Code
 - Or just say "add my API key" or "set up .env"
 
@@ -284,6 +316,7 @@ The difference is: you're not manually pasting keys where you might accidentally
 no-more-leaked-keys/
 ├── README.md                 # You're reading this
 ├── LICENSE                   # Usage terms
+├── install.sh                # One-command installer
 ├── keychain-secrets/         # Claude Code skill
 │   ├── SKILL.md
 │   ├── workflows/
@@ -298,6 +331,8 @@ no-more-leaked-keys/
 ├── commands/
 │   ├── secrets.md            # /secrets slash command
 │   └── add-mcp.md            # /add-mcp slash command
+├── hooks/
+│   └── block-unsafe-mcp-add.sh  # Security hook (blocks unsafe commands)
 └── test-project/             # Example project for testing
     ├── .env.example
     ├── test-node.js
