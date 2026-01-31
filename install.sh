@@ -14,27 +14,27 @@ echo ""
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Create directories if they don't exist
-echo "[1/5] Creating directories..."
+echo "[1/6] Creating directories..."
 mkdir -p ~/.claude/skills
 mkdir -p ~/.claude/commands
 mkdir -p ~/.claude/hooks
 
 # Install the skill
-echo "[2/5] Installing keychain-secrets skill..."
+echo "[2/6] Installing keychain-secrets skill..."
 cp -r "$SCRIPT_DIR/keychain-secrets" ~/.claude/skills/
 
 # Install the commands
-echo "[3/5] Installing slash commands..."
+echo "[3/6] Installing slash commands..."
 cp "$SCRIPT_DIR/commands/secrets.md" ~/.claude/commands/
 cp "$SCRIPT_DIR/commands/add-mcp.md" ~/.claude/commands/
 
 # Install the security hook
-echo "[4/5] Installing security hook..."
+echo "[4/6] Installing security hook..."
 cp "$SCRIPT_DIR/hooks/block-unsafe-mcp-add.sh" ~/.claude/hooks/
 chmod +x ~/.claude/hooks/block-unsafe-mcp-add.sh
 
 # Add hook to Claude settings
-echo "[5/5] Configuring Claude Code to use security hook..."
+echo "[5/6] Configuring Claude Code to use security hook..."
 
 # Check if settings.json exists
 SETTINGS_FILE="$HOME/.claude/settings.json"
@@ -108,6 +108,58 @@ EOF
     echo "  Created settings.json with security hook."
 fi
 
+# Add shell-level protection
+echo "[6/6] Adding shell-level protection..."
+
+SHELL_PROTECTION='
+# ============================================
+# No More Leaked Keys - Security Protection
+# Blocks unsafe "claude mcp add" with auth headers
+# ============================================
+claude() {
+    if [[ "$1" == "mcp" && "$2" == "add" ]]; then
+        for arg in "$@"; do
+            if [[ "$arg" =~ [Aa]uthorization.*[Bb]earer || "$arg" =~ [Bb]earer ]]; then
+                echo ""
+                echo "============================================"
+                echo "  BLOCKED: Unsafe MCP Command Detected"
+                echo "============================================"
+                echo ""
+                echo "The \"claude mcp add\" command with auth headers"
+                echo "exposes your API key in terminal output!"
+                echo ""
+                echo "Use these safe alternatives instead:"
+                echo "  - /secrets  (in Claude Code)"
+                echo "  - /add-mcp  (in Claude Code)"
+                echo ""
+                echo "These pull keys from Keychain securely."
+                echo "See: https://github.com/Vibe-Marketer/no-more-leaked-keys"
+                echo ""
+                return 1
+            fi
+        done
+    fi
+    command claude "$@"
+}
+'
+
+# Detect shell config file
+if [ -n "$ZSH_VERSION" ] || [ -f "$HOME/.zshrc" ]; then
+    SHELL_RC="$HOME/.zshrc"
+elif [ -n "$BASH_VERSION" ] || [ -f "$HOME/.bashrc" ]; then
+    SHELL_RC="$HOME/.bashrc"
+else
+    SHELL_RC="$HOME/.zshrc"
+fi
+
+# Add protection if not already present
+if ! grep -q "No More Leaked Keys - Security Protection" "$SHELL_RC" 2>/dev/null; then
+    echo "$SHELL_PROTECTION" >> "$SHELL_RC"
+    echo "  Shell protection added to $SHELL_RC"
+else
+    echo "  Shell protection already configured."
+fi
+
 echo ""
 echo "======================================"
 echo "  Installation Complete!"
@@ -116,15 +168,19 @@ echo ""
 echo "What's installed:"
 echo "  - Skill: ~/.claude/skills/keychain-secrets/"
 echo "  - Commands: /secrets, /add-mcp"
-echo "  - Security hook: Blocks unsafe 'claude mcp add' commands"
+echo "  - Claude Code hook: Blocks unsafe commands from Claude"
+echo "  - Shell protection: Blocks unsafe commands from terminal"
 echo ""
 echo "Usage:"
 echo "  - Type /secrets to manage API keys"
 echo "  - Type /add-mcp to securely add MCP servers"
 echo ""
-echo "The security hook will automatically block any attempt to use"
-echo "'claude mcp add' with authentication headers, which would expose"
-echo "your API keys in terminal output."
+echo "Protection is now active at TWO levels:"
+echo "  1. Claude Code hook - blocks Claude from running unsafe commands"
+echo "  2. Shell function - blocks YOU from running unsafe commands"
 echo ""
-echo "Restart Claude Code to activate the changes."
+echo "To activate shell protection now, run:"
+echo "  source $SHELL_RC"
+echo ""
+echo "Or restart your terminal."
 echo ""
