@@ -1,7 +1,7 @@
 {
   "name": "no-more-leaked-keys",
-  "version": "1.0.0",
-  "description": "Stop accidentally exposing API keys. Secure key management for Claude Code using macOS Keychain.",
+  "version": "1.0.1",
+  "description": "Stop accidentally exposing API keys. Secure key management for Claude Code and OpenCode using macOS Keychain.",
   "bin": {
     "no-more-leaked-keys": "./bin/install.js"
   },
