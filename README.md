@@ -41,16 +41,24 @@ Even if you're careful:
 
 ## The Solution
 
-**Store API keys in macOS Keychain. Never in files.**
+**Don't create `.env` files manually. Let this tool do it.**
 
-- Keychain is **encrypted** (AES-256)
-- Keychain is **local** (not synced to cloud)
-- Keychain is **scriptable** (we can automate it)
-- Generate `.env` files **on demand** from Keychain
-- Keys are **invisible** when you paste them
-- Clipboard is **auto-cleared** after storing
+The `.env` file itself is standard — plain text keys, just like always. But the *process* of creating it is where things go wrong:
 
-**One Keychain. Every project. Zero risk.**
+- You forget to add `.env` to `.gitignore`
+- You paste keys while screen sharing
+- Keys sit in your clipboard and get pasted in Slack
+- You copy keys between projects and lose track
+
+**Human error is the real risk. This tool removes the opportunities to mess up:**
+
+- Keys stored in Keychain (encrypted, one source of truth)
+- Keys entered with **invisible paste** (nothing on screen)
+- Clipboard **auto-cleared** after storing
+- `.env` generated **on demand** and auto-added to `.gitignore`
+- Unsafe commands **automatically blocked**
+
+**One Keychain. Every project. Fewer ways to screw up.**
 
 ---
 
@@ -120,7 +128,7 @@ require('dotenv').config()
 const apiKey = process.env.OPENAI_API_KEY
 ```
 
-**The difference:** Your keys came from Keychain, not a file you might accidentally commit.
+**The difference:** You didn't manually paste keys into a file where you might forget to gitignore it.
 
 ---
 
@@ -315,12 +323,18 @@ It's gone. Keychain doesn't have a recycle bin. You'll need to get the key again
 
 ### Does the `.env` file contain my actual keys?
 
-Yes, temporarily. The `.env` file is created with your keys so your code can read them. But:
-- It has `600` permissions (only you can read it)
-- It's in `.gitignore` (never committed)
-- You can delete it and regenerate anytime
+Yes. The `.env` file contains your keys in plain text — that's the industry standard and how apps read them. Every developer has plain text keys in `.env` files.
 
-The difference is: you're not manually pasting keys where you might accidentally commit them.
+**What this tool actually protects against:**
+- Accidentally committing `.env` to git (auto-adds to `.gitignore`)
+- Exposing keys in terminal history (blocks unsafe commands)
+- Showing keys while screen sharing (invisible paste)
+- Keys visible in clipboard (auto-cleared)
+
+**What this tool does NOT do:**
+- Make the `.env` file encrypted or unreadable
+
+Keychain is the secure source of truth. The `.env` file is just the delivery mechanism that apps expect.
 
 ---
 
