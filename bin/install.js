@@ -83,8 +83,20 @@ logSuccess('Directories ready (Claude Code + OpenCode)');
 // Step 2: Install skill to both
 logStep(2, TOTAL_STEPS, 'Installing keychain-secrets skill...');
 const skillSrc = path.join(PACKAGE_DIR, 'keychain-secrets');
-fs.cpSync(skillSrc, path.join(CLAUDE_SKILLS_DIR, 'keychain-secrets'), { recursive: true });
-fs.cpSync(skillSrc, path.join(OPENCODE_SKILLS_DIR, 'keychain-secrets'), { recursive: true });
+
+// Remove existing skill directories if they exist (handles upgrade case)
+const claudeSkillDest = path.join(CLAUDE_SKILLS_DIR, 'keychain-secrets');
+const opencodeSkillDest = path.join(OPENCODE_SKILLS_DIR, 'keychain-secrets');
+
+if (fs.existsSync(claudeSkillDest)) {
+  fs.rmSync(claudeSkillDest, { recursive: true, force: true });
+}
+if (fs.existsSync(opencodeSkillDest)) {
+  fs.rmSync(opencodeSkillDest, { recursive: true, force: true });
+}
+
+fs.cpSync(skillSrc, claudeSkillDest, { recursive: true });
+fs.cpSync(skillSrc, opencodeSkillDest, { recursive: true });
 logSuccess('Skill installed to Claude Code and OpenCode');
 
 // Step 3: Install commands to both
