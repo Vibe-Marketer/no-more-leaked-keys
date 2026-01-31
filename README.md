@@ -137,6 +137,39 @@ Every layer is protected:
 | **Readable by others** | `chmod 600` — owner-only file permissions |
 | **Committed to git** | Auto-adds `.env` to `.gitignore` |
 | **In terminal history** | Key never part of a command string |
+| **MCP server config** | Direct file edit — never echoed to terminal |
+
+---
+
+## Adding MCP Servers Securely
+
+**WARNING: Never use `claude mcp add` with authentication headers!**
+
+The native `claude mcp add` command **exposes your API key** in terminal output:
+
+```bash
+# DANGEROUS - This prints your key to the terminal!
+claude mcp add --transport http tally https://api.tally.so/mcp \
+  --header "Authorization: Bearer $TALLY_API_KEY"
+# Output includes: "Authorization": "Bearer sk-actual-key-here"  <-- EXPOSED!
+```
+
+**Use this skill instead.** It:
+1. Pulls the key from Keychain silently
+2. Writes directly to the config file
+3. Never echoes the key anywhere
+
+```
+> /secrets
+> "Add MCP server securely"
+> MCP name: tally
+> MCP URL: https://api.tally.so/mcp
+> Key name in Keychain: TALLY_API_KEY
+> Target: claude
+
+[SUCCESS] Added tally MCP to Claude Code
+[SUCCESS] Key retrieved from Keychain (never displayed)
+```
 
 ---
 
@@ -254,7 +287,8 @@ no-more-leaked-keys/
 ├── keychain-secrets/         # Claude Code skill
 │   ├── SKILL.md
 │   ├── workflows/
-│   │   ├── add-key.md
+│   │   ├── add-key.md        # Store keys in Keychain
+│   │   ├── add-mcp.md        # Securely add MCP servers
 │   │   ├── list-keys.md
 │   │   ├── populate-env.md
 │   │   └── remove-key.md
@@ -262,7 +296,8 @@ no-more-leaked-keys/
 │       ├── keychain-commands.md
 │       └── env-file-patterns.md
 ├── commands/
-│   └── secrets.md            # /secrets slash command
+│   ├── secrets.md            # /secrets slash command
+│   └── add-mcp.md            # /add-mcp slash command
 └── test-project/             # Example project for testing
     ├── .env.example
     ├── test-node.js

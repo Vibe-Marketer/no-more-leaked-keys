@@ -1,6 +1,6 @@
 ---
 name: keychain-secrets
-description: "Securely manage API keys using macOS Keychain. Use when working with .env files, adding new API keys, or populating environment variables from Keychain. Triggers on: api key, keychain, .env, environment variables, secrets, credentials."
+description: "Securely manage API keys using macOS Keychain. Use when working with .env files, adding new API keys, adding MCP servers, or populating environment variables from Keychain. Triggers on: api key, keychain, .env, environment variables, secrets, credentials, mcp, mcp server, claude mcp add."
 ---
 
 <essential_principles>
@@ -37,8 +37,9 @@ What would you like to do?
 
 1. **Populate .env from Keychain** - Retrieve stored keys and write them to a .env file
 2. **Add a new key to Keychain** - Securely store a new API key (won't appear on screen)
-3. **List stored keys** - See what keys are available in your Keychain
-4. **Remove a key** - Delete a key from Keychain
+3. **Add MCP server securely** - Add an MCP to Claude Code or OpenCode WITHOUT exposing keys
+4. **List stored keys** - See what keys are available in your Keychain
+5. **Remove a key** - Delete a key from Keychain
 
 **Wait for response before proceeding.**
 </intake>
@@ -48,11 +49,29 @@ What would you like to do?
 |----------|----------|
 | 1, "populate", "env", "retrieve", "get", "write env" | `workflows/populate-env.md` |
 | 2, "add", "store", "new key", "save" | `workflows/add-key.md` |
-| 3, "list", "show", "available", "what keys" | `workflows/list-keys.md` |
-| 4, "remove", "delete", "revoke" | `workflows/remove-key.md` |
+| 3, "mcp", "add mcp", "claude mcp", "opencode mcp" | `workflows/add-mcp.md` |
+| 4, "list", "show", "available", "what keys" | `workflows/list-keys.md` |
+| 5, "remove", "delete", "revoke" | `workflows/remove-key.md` |
 
 **After reading the workflow, follow it exactly.**
 </routing>
+
+<critical_warning>
+## NEVER USE `claude mcp add` WITH AUTH HEADERS
+
+The `claude mcp add` command **exposes secrets in terminal output**:
+
+```bash
+# DANGEROUS - This will print your API key to the terminal!
+claude mcp add --transport http tally https://api.tally.so/mcp \
+  --header "Authorization: Bearer $TALLY_API_KEY"
+```
+
+**Always use option 3 (Add MCP server securely) instead.** This workflow:
+- Pulls the key from Keychain silently
+- Writes directly to config files
+- Never echoes the key anywhere
+</critical_warning>
 
 <reference_index>
 All domain knowledge in `references/`:
@@ -66,6 +85,7 @@ All domain knowledge in `references/`:
 |----------|---------|
 | populate-env.md | Retrieve keys from Keychain and write to .env |
 | add-key.md | Securely add a new API key to Keychain |
+| add-mcp.md | Securely add MCP server to Claude Code / OpenCode |
 | list-keys.md | Show available keys in Keychain |
 | remove-key.md | Delete a key from Keychain |
 </workflows_index>
